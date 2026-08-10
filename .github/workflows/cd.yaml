@@ -31,57 +31,80 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
 
-      # 3. Verify AWS identity
+      # 3. Check AWS identity
       - name: Check AWS Identity
         run: |
-          echo "Checking AWS identity..."
+          echo "===== AWS Identity ====="
           aws sts get-caller-identity
 
-      # 4. Verify EKS cluster
+      # 4. Check EKS cluster
       - name: Check EKS Cluster
         run: |
+          echo "===== EKS Cluster ====="
+
           aws eks describe-cluster \
             --name ramecs \
             --region eu-west-1 \
             --query 'cluster.status' \
             --output text
 
-      # 5. Update kubeconfig
+      # 5. Check EKS access entry
+      - name: Check EKS Access Entry
+        run: |
+          echo "===== EKS Access Entry ====="
+
+          aws eks list-access-entries \
+            --cluster-name ramecs \
+            --region eu-west-1
+
+      # 6. Generate kubeconfig
       - name: Configure kubectl
         run: |
+          echo "===== Updating kubeconfig ====="
+
           aws eks update-kubeconfig \
             --region eu-west-1 \
             --name ramecs
-          
-          echo "Kubeconfig updated successfully"
-          echo "Current context:"
+
+          echo "===== Current Context ====="
           kubectl config current-context
 
-      # 6. Verify kubectl Configuration
-      - name: Verify kubectl Configuration
+      # 7. Generate EKS authentication token
+      - name: Test EKS Authentication Token
         run: |
-          echo "Checking cluster info..."
-          kubectl cluster-info
-          
-          echo "Checking current user..."
-          kubectl config get-contexts
+          echo "===== Getting EKS Token ====="
 
-      # 7. Verify EKS nodes
+          aws eks get-token \
+            --cluster-name ramecs \
+            --region eu-west-1 \
+            --output json > /tmp/eks-token.json
+
+          echo "EKS token generated successfully"
+
+      # 8. Test Kubernetes connection
+      - name: Test Kubernetes Connection
+        run: |
+          echo "===== Cluster Info ====="
+          kubectl cluster-info
+
+      # 9. Check nodes
       - name: Check EKS Nodes
         run: |
+          echo "===== EKS Nodes ====="
           kubectl get nodes
 
-      # 8. Deploy application
+      # 10. Deploy application
       - name: Deploy Application
         run: |
+          echo "===== Deploying Application ====="
           kubectl apply -f k8s/
 
-      # 9. Wait for deployment
+      # 11. Wait for deployment
       - name: Wait for Deployment
         run: |
           kubectl rollout status deployment/trainbook --timeout=180s
 
-      # 10. Check deployment
+      # 12. Check deployment
       - name: Check Deployment
         run: |
           echo "===== Deployments ====="
