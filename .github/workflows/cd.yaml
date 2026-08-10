@@ -155,7 +155,7 @@ jobs:
         run: |
           echo "===== Waiting for Deployment ====="
 
-          kubectl rollout status deployment/trainbook --timeout=180s
+          kubectl rollout status deployment/ram-train-book --timeout=180s
 
       # 16. Check deployment
       - name: Check Deployment
