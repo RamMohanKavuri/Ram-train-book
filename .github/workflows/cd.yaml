@@ -52,12 +52,19 @@ jobs:
           aws eks update-kubeconfig \
             --region eu-west-1 \
             --name ramecs
+          
+          echo "Kubeconfig updated successfully"
+          echo "Current context:"
+          kubectl config current-context
 
-      # 6. Verify kubectl configuration
+      # 6. Verify kubectl Configuration
       - name: Verify kubectl Configuration
         run: |
-          kubectl config current-context
+          echo "Checking cluster info..."
           kubectl cluster-info
+          
+          echo "Checking current user..."
+          kubectl config get-contexts
 
       # 7. Verify EKS nodes
       - name: Check EKS Nodes
