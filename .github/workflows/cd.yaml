@@ -35,7 +35,9 @@ jobs:
       - name: Check AWS Identity
         run: |
           echo "===== AWS Identity ====="
-          aws sts get-caller-identity
+          IDENTITY=$(aws sts get-caller-identity --output json)
+          echo "$IDENTITY"
+          echo "IAM_ARN=$(echo $IDENTITY | jq -r '.Arn')" >> $GITHUB_ENV
 
       # 4. Check EKS cluster
       - name: Check EKS Cluster
