@@ -29,14 +29,18 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-1
+          aws-region: ${{ secrets.AWS_REGION }}
 
       # 3. Update kubeconfig
       - name: Configure kubectl
         run: |
           aws eks update-kubeconfig \
-            --region eu-west-1 \
-            --name ramecs
+            --region ${{ secrets.AWS_REGION }} \
+            --name ${{ secrets.EKS_CLUSTER_NAME }}
+          
+          # Debug: verify kubeconfig
+          echo "Kubeconfig updated. Verifying..."
+          cat ~/.kube/config | grep -A 2 'name:'
 
       # 4. Verify EKS connection
       - name: Check EKS Cluster
