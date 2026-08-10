@@ -48,63 +48,114 @@ jobs:
             --query 'cluster.status' \
             --output text
 
-      # 5. Check EKS access entry
-      - name: Check EKS Access Entry
+      # 5. Check EKS authentication mode
+      - name: Check EKS Authentication Mode
         run: |
-          echo "===== EKS Access Entry ====="
+          echo "===== EKS Authentication Mode ====="
+
+          aws eks describe-cluster \
+            --name ramecs \
+            --region eu-west-1 \
+            --query 'cluster.accessConfig.authenticationMode' \
+            --output text
+
+      # 6. Check EKS access entries
+      - name: Check EKS Access Entries
+        run: |
+          echo "===== EKS Access Entries ====="
 
           aws eks list-access-entries \
             --cluster-name ramecs \
             --region eu-west-1
 
-      # 6. Generate kubeconfig
+      # 7. Check manio access policy
+      - name: Check EKS Access Policy
+        run: |
+          echo "===== EKS Access Policy for manio ====="
+
+          aws eks list-associated-access-policies \
+            --cluster-name ramecs \
+            --principal-arn arn:aws:iam::422261031406:user/manio \
+            --region eu-west-1
+
+      # 8. Test EKS authentication token
+      - name: Test EKS Authentication Token
+        run: |
+          echo "===== Generating EKS Token ====="
+
+          aws eks get-token \
+            --cluster-name ramecs \
+            --region eu-west-1
+
+          echo "EKS token generated successfully"
+
+      # 9. Configure kubeconfig
       - name: Configure kubectl
         run: |
           echo "===== Updating kubeconfig ====="
 
+          rm -rf ~/.kube
+          mkdir -p ~/.kube
+
           aws eks update-kubeconfig \
             --region eu-west-1 \
-            --name ramecs
+            --name ramecs \
+            --kubeconfig ~/.kube/config
 
           echo "===== Current Context ====="
           kubectl config current-context
 
-      # 7. Generate EKS authentication token
-      - name: Test EKS Authentication Token
+      # 10. Verify kubeconfig authentication configuration
+      - name: Verify kubeconfig
         run: |
-          echo "===== Getting EKS Token ====="
+          echo "===== Kubernetes Exec Configuration ====="
 
-          aws eks get-token \
-            --cluster-name ramecs \
-            --region eu-west-1 \
-            --output json > /tmp/eks-token.json
+          kubectl config view \
+            --minify \
+            --raw \
+            -o jsonpath='{.users[0].user.exec.command}{"\n"}'
 
-          echo "EKS token generated successfully"
+          kubectl config view \
+            --minify \
+            --raw \
+            -o jsonpath='{.users[0].user.exec.args}{"\n"}'
 
-      # 8. Test Kubernetes connection
+      # 11. Test Kubernetes API
       - name: Test Kubernetes Connection
         run: |
+          echo "===== Kubernetes API ====="
+
+          kubectl get --raw=/version
+
+      # 12. Check cluster information
+      - name: Check Cluster Info
+        run: |
           echo "===== Cluster Info ====="
+
           kubectl cluster-info
 
-      # 9. Check nodes
+      # 13. Check EKS nodes
       - name: Check EKS Nodes
         run: |
           echo "===== EKS Nodes ====="
+
           kubectl get nodes
 
-      # 10. Deploy application
+      # 14. Deploy application
       - name: Deploy Application
         run: |
           echo "===== Deploying Application ====="
+
           kubectl apply -f k8s/
 
-      # 11. Wait for deployment
+      # 15. Wait for deployment
       - name: Wait for Deployment
         run: |
+          echo "===== Waiting for Deployment ====="
+
           kubectl rollout status deployment/trainbook --timeout=180s
 
-      # 12. Check deployment
+      # 16. Check deployment
       - name: Check Deployment
         run: |
           echo "===== Deployments ====="
